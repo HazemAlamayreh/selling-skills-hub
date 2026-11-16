@@ -4,6 +4,7 @@ import {getAuth,GoogleAuthProvider,signInWithPopup,onAuthStateChanged,signOut} f
 import {getFirestore,collection,getDocs,doc,getDoc,setDoc,serverTimestamp} from 'https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js';
 const $=id=>document.getElementById(id),configUrl='./firebase/firebase-config.js';
 let auth,db,rows={};
+$('googleLogin').disabled=true;
 const csv=(v)=>'"'+String(v??'').replaceAll('"','""')+'"';
 async function load(){
 $('dataStatus').textContent='Loading actual Firestore data…';
@@ -56,13 +57,12 @@ return '<tr><td>'+escapeHtml(p.name||p.email||x.uid)+'</td><td>'+escapeHtml(x.se
 $('dataStatus').textContent='Connected. All metrics are drawn from Firebase.';
 }catch(e){$('dataStatus').textContent='Unable to read Firestore: '+e.message;}}
 function escapeHtml(x){return String(x??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
-$('googleLogin').onclick=async()=>{try{$('status').textContent='Signing in…';await signInWithPopup(auth,new GoogleAuthProvider())}catch(e){$('status').textContent=e.message}};
-$('enrollButton').onclick=async()=>{const uid=$('enrollUid').value.trim();if(!/^[a-zA-Z0-9]{10,100}$/.test(uid)){$('enrollStatus').textContent='Enter a valid participant UID.';return}try{const p=await getDoc(doc(db,'participants',uid));if(!p.exists())throw Error('Participant profile not found. Ask the learner to register first.');await setDoc(doc(db,'sessions','KH-SS-001'),{programId:'selling-skills',organizationId:'knowledge-hub',status:'prework-open'},{merge:true});await setDoc(doc(db,'enrollments','KH-SS-001_'+uid),{uid,sessionId:'KH-SS-001',programId:'selling-skills',organizationId:'knowledge-hub',status:'active',createdAt:serverTimestamp()});$('enrollStatus').textContent='Enrollment approved. Participant can now refresh their course.';await load()}catch(e){$('enrollStatus').textContent=e.message}};
+$('googleLogin').onclick=async()=>{try{$('status').textContent='Signing in…';if(!auth)throw Error('Firebase is still initializing. Refresh the page.');await signInWithPopup(auth,new GoogleAuthProvider())}catch(e){$('status').textContent=e.message}};
 $('refresh').onclick=load;$('logout').onclick=()=>signOut(auth);
 $('export').onclick=()=>{let lines=['collection,id,uid,sessionId,programId,name,email,assessmentId,questionId,selectedOption'];for(let [kind,data] of Object.entries(rows))for(let x of data)lines.push([kind,x.id,x.uid,x.sessionId,x.programId,x.name,x.email,x.assessmentId,x.questionId,x.selectedOption].map(csv).join(','));let u=URL.createObjectURL(new Blob([lines.join('\n')],{type:'text/csv;charset=utf-8'}));let a=document.createElement('a');a.href=u;a.download='External_Training_Analytics.csv';a.click();URL.revokeObjectURL(u)};
 try{
 const c=await import(configUrl);if(!c.firebaseConfig?.projectId||c.firebaseConfig.projectId==='REPLACE_ME')throw Error('not configured');
-const app=initializeApp(c.firebaseConfig);auth=getAuth(app);db=getFirestore(app);
+const app=initializeApp(c.firebaseConfig);auth=getAuth(app);db=getFirestore(app);$('googleLogin').disabled=false;$('status').textContent='';
 onAuthStateChanged(auth,async user=>{if(!user){$('login').classList.remove('hidden');$('dashboard').classList.add('hidden');return}const adminRecord=await getDoc(doc(db,'admins',user.uid));if(!adminRecord.exists()||adminRecord.data().active!==true||adminRecord.data().role!=='super_admin'){$('status').textContent='Access denied: your account is not an active External Training administrator.';await signOut(auth);return}$('login').classList.add('hidden');$('dashboard').classList.remove('hidden');await load()});
-}catch(e){$('setup').classList.remove('hidden');$('login').classList.add('hidden');}
+}catch(e){$('status').textContent='Firebase initialization failed: '+e.message;$('googleLogin').disabled=true;}
 </script></body></html>
