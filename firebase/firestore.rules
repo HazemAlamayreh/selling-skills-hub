@@ -15,9 +15,17 @@ service cloud.firestore {
       allow get: if admin() || (signedIn() && request.auth.uid == uid);
       allow list: if admin();
       allow create: if signedIn() && request.auth.uid == uid
-        && request.resource.data.keys().hasOnly(['uid','name','email','createdAt'])
+        && request.resource.data.keys().hasOnly(['uid','name','email','jobTitle','department','experience','createdAt'])
         && request.resource.data.uid == uid
-        && request.resource.data.email == request.auth.token.email;
+        && request.resource.data.email == request.auth.token.email
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.name is string
+        && request.resource.data.name.size() <= 100
+        && request.resource.data.jobTitle is string
+        && request.resource.data.jobTitle.size() <= 100
+        && request.resource.data.department is string
+        && request.resource.data.department.size() <= 100
+        && request.resource.data.experience in ['0-2','3-5','6-10','11+'];
       allow update: if signedIn() && request.auth.uid == uid
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name']);
       allow delete: if admin();
@@ -27,7 +35,7 @@ service cloud.firestore {
     // not by a public invitation URL alone.
     match /enrollments/{enrollmentId} {
       allow get, list: if admin() || (signedIn() && resource.data.uid == request.auth.uid);
-      allow write: if admin();
+      allow create, update, delete: if admin();
     }
 
     // Assessment events are append-only. The authenticated learner may submit
@@ -36,7 +44,10 @@ service cloud.firestore {
     match /assessmentResponses/{responseId} {
       function ownEnrollment() {
         return exists(/databases/$(database)/documents/enrollments/$(request.resource.data.enrollmentId))
-          && get(/databases/$(database)/documents/enrollments/$(request.resource.data.enrollmentId)).data.uid == request.auth.uid;
+          && get(/databases/$(database)/documents/enrollments/$(request.resource.data.enrollmentId)).data.uid == request.auth.uid
+          && get(/databases/$(database)/documents/enrollments/$(request.resource.data.enrollmentId)).data.status == 'active'
+          && get(/databases/$(database)/documents/enrollments/$(request.resource.data.enrollmentId)).data.sessionId == request.resource.data.sessionId
+          && request.resource.data.enrollmentId == request.resource.data.sessionId + '_' + request.auth.uid;
       }
       allow create: if signedIn() && ownEnrollment()
         && request.resource.data.uid == request.auth.uid
@@ -44,7 +55,11 @@ service cloud.firestore {
         && request.resource.data.createdAt == request.time
         && request.resource.data.selectedOption is int
         && request.resource.data.selectedOption >= 0
-        && request.resource.data.selectedOption <= 9;
+        && request.resource.data.selectedOption <= 2
+        && request.resource.data.programId == 'selling-skills'
+        && request.resource.data.assessmentId == 'prework-v1'
+        && request.resource.data.questionId in ['q0','q1','q2','q3','q4','q5','q6','q7','q8','q9','q10','q11']
+        && responseId == request.resource.data.enrollmentId + '_' + request.resource.data.questionId;
       allow get, list: if admin() || (signedIn() && resource.data.uid == request.auth.uid);
       allow update, delete: if false;
     }
