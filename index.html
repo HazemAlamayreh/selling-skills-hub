@@ -210,9 +210,10 @@ function downloadData(){let data=JSON.stringify({app:'PSS-3day-v3',exported:new 
 function importData(e){let f=e.target.files?.[0];if(!f)return;f.text().then(t=>{try{let obj=JSON.parse(t);if(!obj.progress||!obj.progress.answers||!obj.progress.quiz)throw Error('invalid');saved=obj.progress;save();render()}catch(x){alert(E('Invalid progress file','ملف التقدم غير صالح'))}})}render();
 </script><script type="module">
 try {
- const [{initializeApp},{getAuth,GoogleAuthProvider,signInWithPopup,onAuthStateChanged,signOut},{firebaseConfig}] = await Promise.all([
+ const [{initializeApp},{getAuth,GoogleAuthProvider,signInWithPopup,onAuthStateChanged,signOut},{getFirestore,doc,getDoc,setDoc,serverTimestamp},{firebaseConfig}] = await Promise.all([
    import('https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js'),
    import('https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js'),
+   import('https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js'),
    import('./firebase/firebase-config.js')
  ]);
  const app=initializeApp(firebaseConfig),auth=getAuth(app),provider=new GoogleAuthProvider(),db=getFirestore(app);
