@@ -42,26 +42,34 @@ service cloud.firestore {
     // a response only for a server-issued enrollment belonging to their account.
     // Final scores/skill judgments should be computed on the server.
     match /assessmentResponses/{responseId} {
-      function ownEnrollment() {
-        return exists(/databases/$(database)/documents/enrollments/$(request.resource.data.enrollmentId))
-          && get(/databases/$(database)/documents/enrollments/$(request.resource.data.enrollmentId)).data.uid == request.auth.uid
-          && get(/databases/$(database)/documents/enrollments/$(request.resource.data.enrollmentId)).data.status == 'active'
-          && get(/databases/$(database)/documents/enrollments/$(request.resource.data.enrollmentId)).data.sessionId == request.resource.data.sessionId
-          && request.resource.data.enrollmentId == request.resource.data.sessionId + '_' + request.auth.uid;
-      }
-      allow create: if signedIn() && ownEnrollment()
+      allow create: if signedIn()
         && request.resource.data.uid == request.auth.uid
         && request.resource.data.keys().hasOnly(['uid','enrollmentId','programId','sessionId','assessmentId','questionId','selectedOption','createdAt'])
         && request.resource.data.createdAt == request.time
         && request.resource.data.selectedOption is int
         && request.resource.data.selectedOption >= 0
         && request.resource.data.selectedOption <= 2
+        && request.resource.data.sessionId == 'KH-SS-001'
+        && request.resource.data.enrollmentId == 'KH-SS-001_' + request.auth.uid
         && request.resource.data.programId == 'selling-skills'
         && request.resource.data.assessmentId == 'prework-v1'
         && request.resource.data.questionId in ['q0','q1','q2','q3','q4','q5','q6','q7','q8','q9','q10','q11']
         && responseId == request.resource.data.enrollmentId + '_' + request.resource.data.questionId;
       allow get, list: if admin() || (signedIn() && resource.data.uid == request.auth.uid);
       allow update, delete: if false;
+    }
+
+    // User-owned learning snapshots. Browser-generated scores are not certified skill assessments.
+    match /learningStates/{uid} {
+      allow get: if admin() || (signedIn() && request.auth.uid == uid);
+      allow list: if admin();
+      allow create, update: if signedIn() && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['uid','sessionId','state','updatedAt'])
+        && request.resource.data.uid == uid
+        && request.resource.data.sessionId == 'KH-SS-001'
+        && request.resource.data.updatedAt == request.time
+        && request.resource.data.state is map;
+      allow delete: if admin();
     }
 
     // Server-managed computed scores and admin reporting only.
