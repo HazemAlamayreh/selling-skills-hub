@@ -1,10 +1,10 @@
-// External Training Firebase Web App config — replace placeholders from Firebase Console.
-// PUBLIC web configuration only. NEVER paste service account credentials or private keys.
+// Firebase Web App configuration — public browser settings (not a service-account key).
 export const firebaseConfig = {
-  apiKey: "REPLACE_ME",
-  authDomain: "REPLACE_ME",
-  projectId: "REPLACE_ME",
-  storageBucket: "REPLACE_ME",
-  messagingSenderId: "REPLACE_ME",
-  appId: "REPLACE_ME"
+  apiKey: "AIzaSyAuCfgJMYoRfpprGgsExjgiU4UtBmEb-T0",
+  authDomain: "external-training-b67ee.firebaseapp.com",
+  projectId: "external-training-b67ee",
+  storageBucket: "external-training-b67ee.firebasestorage.app",
+  messagingSenderId: "72802291607",
+  appId: "1:72802291607:web:741c5553c81fa605e6bed2",
+  measurementId: "G-JWLDTJV2J"
 };
