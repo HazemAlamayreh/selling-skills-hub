@@ -55,7 +55,8 @@ service cloud.firestore {
         && request.resource.data.assessmentId == 'prework-v1'
         && request.resource.data.questionId in ['q0','q1','q2','q3','q4','q5','q6','q7','q8','q9','q10','q11']
         && responseId == request.resource.data.enrollmentId + '_' + request.resource.data.questionId;
-      allow get, list: if admin() || (signedIn() && resource.data.uid == request.auth.uid);
+      allow get: if admin() || (signedIn() && responseId.matches('KH-SS-001_' + request.auth.uid + '_q(0|1|2|3|4|5|6|7|8|9|10|11)'));
+      allow list: if admin() || (signedIn() && resource.data.uid == request.auth.uid);
       allow update, delete: if false;
     }
 
